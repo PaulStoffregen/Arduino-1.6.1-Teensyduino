@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 import cc.arduino.packages.BoardPort;
 import cc.arduino.packages.Uploader;
@@ -268,7 +270,7 @@ public class Compiler implements MessageConsumer {
       if (tempBuildFolder.exists()) {
         String files[] = tempBuildFolder.list();
         for (String file : files) {
-          if (file.endsWith(".c") || file.endsWith(".cpp") || file.endsWith(".s")) {
+          if (file.endsWith(".c") || file.endsWith(".cpp") || file.endsWith(".S")) {
             File deleteMe = new File(tempBuildFolder, file);
             if (!deleteMe.delete()) {
               System.err.println("Could not delete " + deleteMe);
@@ -355,10 +357,10 @@ public class Compiler implements MessageConsumer {
     if (prefs.getFile("build.variant.path") != null)
       includeFolders.add(prefs.getFile("build.variant.path"));
     for (Library lib : importedLibraries) {
-      if (verbose)
+      if (verbose || lib.getShowPathname())
         System.out.println(I18n
             .format(_("Using library {0} in folder: {1} {2}"), lib.getName(),
-                    lib.getFolder(), lib.isLegacy() ? "(legacy)" : ""));
+                    lib.getFolder(), lib.isLegacy() ? "(1.0.x format)" : ""));
       includeFolders.add(lib.getSrcFolder());
     }
     if (verbose)
@@ -399,6 +401,10 @@ public class Compiler implements MessageConsumer {
     // 4. link it all together into the .elf file
     progressListener.progress(60);
     compileLink();
+    if (prefs.get("build.elfpatch") != null) {
+      System.out.println("ELF Patch Step");
+      runRecipe("recipe.elfpatch.pattern");
+    }
 
     // 5. run objcopy to generate output files
     progressListener.progress(75);
@@ -501,6 +507,17 @@ public class Compiler implements MessageConsumer {
     } else {
       p.put("build.variant.path", "");
     }
+
+    // Build Time
+    Date d = new Date();
+    GregorianCalendar cal = new GregorianCalendar();
+    long current = d.getTime()/1000;
+    long timezone = cal.get(cal.ZONE_OFFSET)/1000;
+    long daylight = cal.get(cal.DST_OFFSET)/1000;
+    p.put("extra.time.utc", Long.toString(current));
+    p.put("extra.time.local", Long.toString(current + timezone + daylight));
+    p.put("extra.time.zone", Long.toString(timezone));
+    p.put("extra.time.dst", Long.toString(daylight));
     
     return p;
   }
@@ -515,7 +532,10 @@ public class Compiler implements MessageConsumer {
 
     for (File file : sSources) {
       File objectFile = new File(outputPath, file.getName() + ".o");
+      File dependFile = new File(outputPath, file.getName() + ".d");
       objectPaths.add(objectFile);
+      if (isAlreadyCompiled(file, objectFile, dependFile, prefs))
+        continue;
       String[] cmd = getCommandCompilerByRecipe(includeFolders, file, objectFile, "recipe.S.o.pattern");
       execAsynchronously(cmd);
     }
@@ -779,6 +799,60 @@ public class Compiler implements MessageConsumer {
         //msg = _("\nThe 'Keyboard' class is only supported on the Arduino Leonardo.\n\n");
       }
       
+      // Teensyduino specific error messages
+      if (BaseNoGui.isTeensyduino()) {
+        if (verbose) {
+          String buildPath = prefs.get("build.path");
+          while ((i = s.indexOf(buildPath + File.separator)) != -1) {
+            s = s.substring(0, i) + s.substring(i + (buildPath + File.separator).length());
+          }
+        }
+        pieces = PApplet.match(s, "(\\w+\\.\\w+):(\\d+):\\d+:\\s*error:\\s*(.+)\\s*");
+        String m = pieces[3].trim();
+	String err = null;
+	if (m.equals("'Keyboard' was not declared in this scope")) {
+	  msg = "   To make a USB Keyboard, use the Tools > USB Type menu\n";
+	  err = "   'Keyboard' requires a compatible USB Type setting";
+	}
+	if (m.equals("'Mouse' was not declared in this scope")) {
+	  msg = "   To make a USB Mouse, use the Tools > USB Type menu\n";
+	  err = "   'Mouse' requires a compatible USB Type setting";
+	}
+	if (m.equals("'Joystick' was not declared in this scope")) {
+	  msg = "   To make a USB Joystick, use the Tools > USB Type menu\n";
+	  err = "   'Joystick' requires a compatible USB Type setting";
+	}
+	if (m.equals("'Disk' was not declared in this scope")) {
+	  msg = "   To make a USB Disk, use the Tools > USB Type menu\n";
+	  err = "   'Disk' requires a compatible USB Type setting";
+	}
+	if (m.equals("'usbMIDI' was not declared in this scope")) {
+	  msg = "   To make a USB MIDI device, use the Tools > USB Type menu\n";
+	  err = "   'usbMIDI' requires a compatible USB Type setting";
+	}
+	if (m.equals("'RawHID' was not declared in this scope")) {
+	  msg = "   To make a USB RawHID device, use the Tools > USB Type menu\n";
+	  err = "   'RawHID' requires a compatible USB Type setting";
+	}
+	if (m.equals("'FlightSimCommand' was not declared in this scope")) {
+	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
+	  err = "   'FlightSimCommand' requires a compatible USB Type setting";
+	}
+	if (m.equals("'FlightSimInteger' was not declared in this scope")) {
+	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
+	  err = "   'FlightSimInteger' requires a compatible USB Type setting";
+	}
+	if (m.equals("'FlightSimFloat' was not declared in this scope")) {
+	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
+	  err = "   'FlightSimFloat' requires a compatible USB Type setting";
+	}
+	if (m.equals("'FlightSim' was not declared in this scope")) {
+	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
+	  err = "   'FlightSim' requires a compatible USB Type setting";
+	}
+	if (err != null) error = err;
+      } // end of Teensyduino messages
+
       RunnerException e = null;
       if (!sketchIsCompiled) {
         // Place errors when compiling the sketch, but never while compiling libraries
@@ -1037,6 +1111,7 @@ public class Compiler implements MessageConsumer {
   void runRecipe(String recipe) throws RunnerException, PreferencesMapException {
     PreferencesMap dict = new PreferencesMap(prefs);
     dict.put("ide_version", "" + BaseNoGui.REVISION);
+    dict.put("sketch_path", sketch.getFolder().getAbsolutePath());
 
     String[] cmdArray;
     String cmd = prefs.getOrExcept(recipe);
@@ -1148,13 +1223,17 @@ public class Compiler implements MessageConsumer {
     // 3. then loop over the code[] and save each .java file
 
     for (SketchCode sc : sketch.getCodes()) {
-      if (sc.isExtension("c") || sc.isExtension("cpp") || sc.isExtension("h")) {
+      if (sc.isExtension("c") || sc.isExtension("cpp") || sc.isExtension("h") || sc.isExtension("s")) {
         // no pre-processing services necessary for java files
         // just write the the contents of 'program' to a .java file
         // into the build directory. uses byte stream and reader/writer
         // shtuff so that unicode bunk is properly handled
         String filename = sc.getFileName(); //code[i].name + ".java";
         try {
+          if (filename.endsWith(".s")) {
+            // assembly files must be named with capital ".S"
+            filename = filename.substring(0, filename.length()-1) + "S";
+          }
           BaseNoGui.saveFile(sc.getProgram(), new File(buildPath, filename));
         } catch (IOException e) {
           e.printStackTrace();

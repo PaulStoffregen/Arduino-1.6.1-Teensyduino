@@ -53,6 +53,8 @@ public class BaseNoGui {
   static private File examplesFolder;
   static private File toolsFolder;
 
+  static String teensyduino_version = null;
+
   // maps #included files to their library folder
   public static Map<String, Library> importToLibraryTable;
 
@@ -171,6 +173,25 @@ public class BaseNoGui {
     }
     prefs.put("name", extendedName);
     return prefs;
+  }
+
+  static public boolean isTeensyduino() {
+    TargetPlatform targetPlatform = getTargetPlatform();
+    if (targetPlatform == null) return false;
+    TargetPackage targetPackage = targetPlatform.getContainerPackage();
+    if (targetPackage == null) return false;
+    String s = targetPackage.getId();
+    if (s == null) return false;
+    if (!s.equalsIgnoreCase("teensy")) return false;
+    TargetBoard board = getTargetBoard();
+    if (board == null) return false;
+    s = board.getId();
+    if (s == null) return false;
+    if (!s.startsWith("teensy")) return false;
+    s = board.getName();
+    if (s == null) return false;
+    if (!s.startsWith("Teensy")) return false;
+    return true;
   }
 
   static public File getContentFile(String name) {
@@ -586,6 +607,15 @@ public class BaseNoGui {
     packages = new HashMap<String, TargetPackage>();
     loadHardware(getHardwareFolder());
     loadHardware(getSketchbookHardwareFolder());
+    TargetPackage t = packages.get("teensy");
+    if (t != null) {
+      Map<String, TargetPackage> list = new LinkedHashMap<String, TargetPackage>();
+      list.put(t.getId(), t);
+      for (TargetPackage p : packages.values()) {
+        if (p != t) list.put(p.getId(), p);
+      }
+      packages = list;
+    }
     if (packages.size() == 0) {
       System.out.println(_("No valid configured cores found! Exiting..."));
       System.exit(3);
@@ -621,6 +651,14 @@ public class BaseNoGui {
     // help 3rd party installers find the correct hardware path
     PreferencesData.set("last.ide." + VERSION_NAME + ".hardwarepath", getHardwarePath());
     PreferencesData.set("last.ide." + VERSION_NAME + ".daterun", "" + (new Date()).getTime() / 1000);
+    try {
+      File versionFile = getContentFile("lib/teensyduino.txt");
+      if (versionFile.exists()) {
+        teensyduino_version = PApplet.loadStrings(versionFile)[0];
+      }
+    } catch (Exception e) {
+      teensyduino_version = null;
+    }
   }
 
   /**
@@ -726,6 +764,11 @@ public class BaseNoGui {
             // This is the case where 2 libraries have a .h header
             // with the same name.  We must decide which library to
             // use when a sketch has #include "name.h"
+            //
+            // First, make sure the user sees the pathname, even if
+            // not using verbose mode
+            lib.setShowPathname();
+            old.setShowPathname();
             //
             // When all other factors are equal, "libName" is
             // used in preference to "oldName", because getLibraries()
