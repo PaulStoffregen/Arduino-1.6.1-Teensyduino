@@ -570,7 +570,7 @@
     <copy todir="linux/work/lib" flatten="true">
       <fileset refid="runtime.jars" />
     </copy>
-
+    <!--
     <antcall target="assemble">
       <param name="target.path" value="linux/work" />
     </antcall>
@@ -598,42 +598,51 @@
     </antcall>
     <copy file="linux/libastylej/libastylej${arch-bits}.so" tofile="linux/work/lib/libastylej.so" />
     <chmod perm="755" file="linux/work/lib/libastylej.so" />
+    -->
   </target>
 
   <target name="linux32-build" depends="linux-build" description="Build linux (32-bit) version">
     <!-- Unzip ARM tools -->
+    <!--
     <antcall target="untar">
       <param name="archive_file" value="${staging_folder}/dist/gcc-arm-none-eabi-4.8.3-2014q1-linux32.tar.gz" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/gcc-arm-none-eabi-4.8.3-2014q1-linux32.tar.gz" />
       <param name="final_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/gcc-arm-none-eabi-4.8.3-2014q1" />
       <param name="dest_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/" />
     </antcall>
+    -->
 
     <!-- Unzip AVR tools -->
+    <!--
     <antcall target="unzip">
       <param name="archive_file" value="${staging_folder}/avr-toolchain-linux32-3.4.5.zip" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/avr-toolchain-linux32-3.4.5.zip" />
       <param name="final_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/avr" />
       <param name="dest_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/avr" />
     </antcall>
+    -->
   </target>
 
   <target name="linux64-build" depends="linux-build" description="Build linux (64-bit) version">
     <!-- Unzip ARM tools -->
+    <!--
     <antcall target="untar">
       <param name="archive_file" value="${staging_folder}/dist/gcc-arm-none-eabi-4.8.3-2014q1-linux64.tar.gz" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/gcc-arm-none-eabi-4.8.3-2014q1-linux64.tar.gz" />
       <param name="final_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/gcc-arm-none-eabi-4.8.3-2014q1" />
       <param name="dest_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/" />
     </antcall>
+    -->
 
     <!-- Unzip AVR tools -->
+    <!--
     <antcall target="unzip">
       <param name="archive_file" value="${staging_folder}/avr-toolchain-linux64-3.4.5.zip" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/avr-toolchain-linux64-3.4.5.zip" />
       <param name="final_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/avr" />
       <param name="dest_folder" value="${staging_folder}/work/${staging_hardware_folder}/tools/avr" />
     </antcall>
+    -->
   </target>
 
   <target name="linux32-run" depends="linux32-build" description="Run Linux (32-bit) version">
@@ -803,6 +812,7 @@
     <fixcrlf file="windows/work/revisions.txt" eol="dos"/>
     <fixcrlf file="windows/work/lib/formatter.conf" eol="dos"/>
 
+    <!--
     <copy todir="windows/work">
       <fileset dir="windows/dist" includes="*.dll" />
     </copy>
@@ -810,8 +820,10 @@
     <copy todir="windows/work">
       <fileset dir="windows/dist" includes="drivers/**" />
     </copy>
+    -->
 
     <!-- Unzip AVR tools -->
+    <!--
     <antcall target="unzip">
       <param name="archive_file" value="${staging_folder}/avr-toolchain-win32-3.4.5.zip" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/avr-toolchain-win32-3.4.5.zip" />
@@ -828,8 +840,10 @@
     <copy file="windows/libastylej/AStylej.dll" todir="windows/work/lib" />
     <copy file="windows/msvcp100.dll" todir="windows/work" />
     <copy file="windows/msvcr100.dll" todir="windows/work" />
+    -->
 
     <!-- Copy bossac.exe tool -->
+    <!--
     <copy todir="windows/work/hardware/tools">
       <fileset file="windows/bossac.exe" />
       <fileset file="windows/listComPorts.exe" />
@@ -858,13 +872,17 @@
     <launch4j configFile="windows/work/config_debug.xml" />
     <delete dir="windows/work" includes="about.bmp, application.ico, config.xml, config_debug.xml" />
     <copy file="windows/work/arduino.l4j.ini" tofile="windows/work/arduino_debug.l4j.ini" />
+    -->
 
     <!-- cygwin requires html, dll, and exe to have the +x flag -->
+    <!--
     <chmod perm="755">
       <fileset dir="windows/work" includes="**/*.html, **/*.dll, **/*.exe" />
     </chmod>
+    -->
 
     <!-- Unzip ARM toolchain -->
+    <!--
     <antcall target="untar">
       <param name="archive_file" value="${staging_folder}/dist/gcc-arm-none-eabi-4.8.3-2014q1-windows.tar.gz" />
       <param name="archive_url" value="http://arduino.cc/download.php?f=/gcc-arm-none-eabi-4.8.3-2014q1-windows.tar.gz" />
@@ -875,6 +893,7 @@
     <delete includeEmptyDirs="true" quiet="true">
       <fileset dir="windows/work/hardware/tools/avr/doc" />
     </delete>
+    -->
   </target>
 
   <target name="windows-run" depends="windows-build"
