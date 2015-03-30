@@ -724,6 +724,8 @@ public class Compiler implements MessageConsumer {
   public void message(String s) {
     int i;
 
+    if (BaseNoGui.isTeensyduino()) { message_Teensy(s); return; }
+
     // remove the build path so people only see the filename
     // can't use replaceAll() because the path may have characters in it which
     // have meaning in a regular expression.
@@ -733,7 +735,7 @@ public class Compiler implements MessageConsumer {
         s = s.substring(0, i) + s.substring(i + (buildPath + File.separator).length());
       }
     }
-  
+
     // look for error line, which contains file name, line number,
     // and at least the first line of the error message
     String errorFormat = "([\\w\\d_]+.\\w+):(\\d+):\\s*error:\\s*(.*)\\s*";
@@ -743,46 +745,46 @@ public class Compiler implements MessageConsumer {
 //      exception = sketch.placeException(pieces[3], pieces[1], PApplet.parseInt(pieces[2]) - 1);
 //      if (exception != null) exception.hideStackTrace();
 //    }
-    
+
     if (pieces != null) {
       String error = pieces[3], msg = "";
-      
+
       if (pieces[3].trim().equals("SPI.h: No such file or directory")) {
         error = _("Please import the SPI library from the Sketch > Import Library menu.");
         msg = _("\nAs of Arduino 0019, the Ethernet library depends on the SPI library." +
               "\nYou appear to be using it or another library that depends on the SPI library.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("'BYTE' was not declared in this scope")) {
         error = _("The 'BYTE' keyword is no longer supported.");
         msg = _("\nAs of Arduino 1.0, the 'BYTE' keyword is no longer supported." +
               "\nPlease use Serial.write() instead.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("no matching function for call to 'Server::Server(int)'")) {
         error = _("The Server class has been renamed EthernetServer.");
         msg = _("\nAs of Arduino 1.0, the Server class in the Ethernet library " +
               "has been renamed to EthernetServer.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("no matching function for call to 'Client::Client(byte [4], int)'")) {
         error = _("The Client class has been renamed EthernetClient.");
         msg = _("\nAs of Arduino 1.0, the Client class in the Ethernet library " +
               "has been renamed to EthernetClient.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("'Udp' was not declared in this scope")) {
         error = _("The Udp class has been renamed EthernetUdp.");
         msg = _("\nAs of Arduino 1.0, the Udp class in the Ethernet library " +
               "has been renamed to EthernetUdp.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("'class TwoWire' has no member named 'send'")) {
         error = _("Wire.send() has been renamed Wire.write().");
         msg = _("\nAs of Arduino 1.0, the Wire.send() function was renamed " +
               "to Wire.write() for consistency with other libraries.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("'class TwoWire' has no member named 'receive'")) {
         error = _("Wire.receive() has been renamed Wire.read().");
         msg = _("\nAs of Arduino 1.0, the Wire.receive() function was renamed " +
@@ -793,65 +795,11 @@ public class Compiler implements MessageConsumer {
         error = _("'Mouse' only supported on the Arduino Leonardo");
         //msg = _("\nThe 'Mouse' class is only supported on the Arduino Leonardo.\n\n");
       }
-      
+
       if (pieces[3].trim().equals("'Keyboard' was not declared in this scope")) {
         error = _("'Keyboard' only supported on the Arduino Leonardo");
         //msg = _("\nThe 'Keyboard' class is only supported on the Arduino Leonardo.\n\n");
       }
-      
-      // Teensyduino specific error messages
-      if (BaseNoGui.isTeensyduino()) {
-        if (verbose) {
-          String buildPath = prefs.get("build.path");
-          while ((i = s.indexOf(buildPath + File.separator)) != -1) {
-            s = s.substring(0, i) + s.substring(i + (buildPath + File.separator).length());
-          }
-        }
-        pieces = PApplet.match(s, "(\\w+\\.\\w+):(\\d+):\\d+:\\s*error:\\s*(.+)\\s*");
-        String m = pieces[3].trim();
-	String err = null;
-	if (m.equals("'Keyboard' was not declared in this scope")) {
-	  msg = "   To make a USB Keyboard, use the Tools > USB Type menu\n";
-	  err = "   'Keyboard' requires a compatible USB Type setting";
-	}
-	if (m.equals("'Mouse' was not declared in this scope")) {
-	  msg = "   To make a USB Mouse, use the Tools > USB Type menu\n";
-	  err = "   'Mouse' requires a compatible USB Type setting";
-	}
-	if (m.equals("'Joystick' was not declared in this scope")) {
-	  msg = "   To make a USB Joystick, use the Tools > USB Type menu\n";
-	  err = "   'Joystick' requires a compatible USB Type setting";
-	}
-	if (m.equals("'Disk' was not declared in this scope")) {
-	  msg = "   To make a USB Disk, use the Tools > USB Type menu\n";
-	  err = "   'Disk' requires a compatible USB Type setting";
-	}
-	if (m.equals("'usbMIDI' was not declared in this scope")) {
-	  msg = "   To make a USB MIDI device, use the Tools > USB Type menu\n";
-	  err = "   'usbMIDI' requires a compatible USB Type setting";
-	}
-	if (m.equals("'RawHID' was not declared in this scope")) {
-	  msg = "   To make a USB RawHID device, use the Tools > USB Type menu\n";
-	  err = "   'RawHID' requires a compatible USB Type setting";
-	}
-	if (m.equals("'FlightSimCommand' was not declared in this scope")) {
-	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
-	  err = "   'FlightSimCommand' requires a compatible USB Type setting";
-	}
-	if (m.equals("'FlightSimInteger' was not declared in this scope")) {
-	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
-	  err = "   'FlightSimInteger' requires a compatible USB Type setting";
-	}
-	if (m.equals("'FlightSimFloat' was not declared in this scope")) {
-	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
-	  err = "   'FlightSimFloat' requires a compatible USB Type setting";
-	}
-	if (m.equals("'FlightSim' was not declared in this scope")) {
-	  msg = "   To make a Flight Simulator device, use the Tools > USB Type menu\n";
-	  err = "   'FlightSim' requires a compatible USB Type setting";
-	}
-	if (err != null) error = err;
-      } // end of Teensyduino messages
 
       RunnerException e = null;
       if (!sketchIsCompiled) {
@@ -866,15 +814,15 @@ public class Compiler implements MessageConsumer {
         SketchCode code = sketch.getCode(e.getCodeIndex());
         String fileName = (code.isExtension("ino") || code.isExtension("pde")) ? code.getPrettyName() : code.getFileName();
         int lineNum = e.getCodeLine() + 1;
-        s = fileName + ":" + lineNum + ": error: " + pieces[3] + msg;        
+        s = fileName + ":" + lineNum + ": error: " + pieces[3] + msg;
       }
-            
+
       if (exception == null && e != null) {
         exception = e;
         exception.hideStackTrace();
-      }      
+      }
     }
-    
+
     if (s.contains("undefined reference to `SPIClass::begin()'") &&
         s.contains("libraries/Robot_Control")) {
       String error = _("Please import the SPI library from the Sketch > Import Library menu.");
@@ -886,8 +834,70 @@ public class Compiler implements MessageConsumer {
       String error = _("Please import the Wire library from the Sketch > Import Library menu.");
       exception = new RunnerException(error);
     }
-		
+
     System.err.print(s);
+  }
+
+  private void message_Teensy(String s) {
+    s = s.trim();
+    //System.out.println("Original message: " + s);
+    String advice = null;
+    String[] pieces = PApplet.match(s, "(\\w+\\.\\w+):(\\d+):\\d+:\\s*error:\\s*(.+)");
+    if (pieces != null) {
+      if (!sketchIsCompiled) {
+        // Place errors when compiling the sketch, but never while compiling libraries
+        // or the core.  The user's sketch might contain the same filename!
+        RunnerException e;
+        e = placeException(pieces[3], pieces[1], PApplet.parseInt(pieces[2]) - 1);
+        if (e != null) {
+          if (!verbose) {
+            SketchCode code = sketch.getCode(e.getCodeIndex());
+            String fileName = (code.isExtension("ino") || code.isExtension("pde")) ?
+              code.getPrettyName() : code.getFileName();
+            int lineNum = e.getCodeLine() + 1;
+            s = fileName + ":" + lineNum + ": error: " + pieces[3];
+            //System.out.println("friendly message: " + s);
+          }
+        }
+        advice = message_advice_Teensy(pieces[3].trim());
+      }
+    }
+    System.err.print(s + "\n");
+    if (advice != null) System.err.print(advice + "\n");
+  }
+
+  private String message_advice_Teensy(String s) {
+    if (s.equals("'Keyboard' was not declared in this scope")) {
+      return "To make a USB Keyboard, use the Tools > USB Type menu";
+    }
+    if (s.equals("'Mouse' was not declared in this scope")) {
+      return "To make a USB Mouse, use the Tools > USB Type menu";
+    }
+    if (s.equals("'Joystick' was not declared in this scope")) {
+      return "To make a USB Joystick, use the Tools > USB Type menu";
+    }
+    if (s.equals("'Disk' was not declared in this scope")) {
+      return "To make a USB Disk, use the Tools > USB Type menu";
+    }
+    if (s.equals("'usbMIDI' was not declared in this scope")) {
+      return "To make a USB MIDI device, use the Tools > USB Type menu";
+    }
+    if (s.equals("'RawHID' was not declared in this scope")) {
+      return "To make a USB RawHID device, use the Tools > USB Type menu";
+    }
+    if (s.equals("'FlightSimCommand' was not declared in this scope")) {
+      return "To make a Flight Simulator device, use the Tools > USB Type menu";
+    }
+    if (s.equals("'FlightSimInteger' was not declared in this scope")) {
+      return "To make a Flight Simulator device, use the Tools > USB Type menu";
+    }
+    if (s.equals("'FlightSimFloat' was not declared in this scope")) {
+      return "To make a Flight Simulator device, use the Tools > USB Type menu";
+    }
+    if (s.equals("'FlightSim' was not declared in this scope")) {
+      return "To make a Flight Simulator device, use the Tools > USB Type menu";
+    }
+    return null;
   }
 
   private String[] getCommandCompilerByRecipe(List<File> includeFolders, File sourceFile, File objectFile, String recipe) throws PreferencesMapException, RunnerException {
