@@ -858,6 +858,8 @@ public class Compiler implements MessageConsumer {
             s = fileName + ":" + lineNum + ": error: " + pieces[3];
             //System.out.println("friendly message: " + s);
           }
+          e.hideStackTrace();
+          exception = e;
         }
         advice = message_advice_Teensy(pieces[3].trim());
       }
